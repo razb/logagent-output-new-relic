@@ -25,12 +25,6 @@ function OutputNewrelic (config, eventEmitter) {
   ) {
     this.config.filter.match = RegExp(this.config.filter.match)
   }
-  if (this.config.ignoreFields && this.config.ignoreFields.length > 0) {
-    this.ignoreFields = {}
-    for (var i = 0; i < this.config.ignoreFields.length; i++) {
-      this.ignoreFields[this.config.ignoreFields[i]] = true
-    }
-  }
   if (this.config.maxBufferSize === undefined) {
     // set default
     this.config.maxBufferSize = 1
@@ -47,6 +41,7 @@ function OutputNewrelic (config, eventEmitter) {
     // don't allow more than 2 requests per second
     this.config.flushInterval = 1
   }
+
 }
 module.exports = OutputNewrelic
 
@@ -77,9 +72,17 @@ OutputNewrelic.prototype.addTobuffer = function (line) {
 }
 
 OutputNewrelic.prototype.sendBuffer = function () {
-  var httpBody = []
+  let self = this
+  let httpBody = []
   for (var i = 0; i < this.buffer.length; i++) {
     let json = JSON.parse(this.buffer[i])
+    if ( self.config.fields && self.config.fields[0] ) {
+    Object.keys(json).map( x => {
+    if (self.config.fields.indexOf(x) < 0 ) {
+    delete json[x]
+    }
+    })
+    }
     json.sendtime = parseInt(Date.now()/1000)
     httpBody.push(json)
   }
