@@ -1,5 +1,5 @@
 'use strict'
-var request = require('requestretry')
+const request = require('requestretry')
 const zlib = require('zlib');
 /** example configuration
   output:
@@ -18,20 +18,20 @@ function OutputNewrelic(config, eventEmitter) {
     this.config = config
     this.buffer = []
     this.eventEmitter = eventEmitter
-    if ( this.config.filters && this.config.filters.length > 0 ) {
-    this.config.filters.map( filtergroup => {
-    if ( filtergroup[0] ) {
-    filtergroup.map( filter => {
-    if (
-        filter &&
-        filter.match &&
-        filter.field
-    ) {
-        filter.match = RegExp(filter.match)
-    }
-    })
-    }
-    })
+    if (this.config.filters && this.config.filters.length > 0) {
+        this.config.filters.map(filtergroup => {
+            if (filtergroup[0]) {
+                filtergroup.map(filter => {
+                    if (
+                        filter &&
+                        filter.match &&
+                        filter.field
+                    ) {
+                        filter.match = RegExp(filter.match)
+                    }
+                })
+            }
+        })
     }
     if (this.config.maxBufferSize === undefined) {
         // set default
@@ -54,13 +54,13 @@ function OutputNewrelic(config, eventEmitter) {
 module.exports = OutputNewrelic
 
 OutputNewrelic.prototype.start = function() {
-    var self = this
+    let self = this
     this.evtFunction = this.eventHandler.bind(this)
     this.eventEmitter.on('data.parsed', this.evtFunction)
     if (self.config.debug) {
         console.log('logagent-output-new-relic plugin started ' + this.config.url)
     }
-    var sendBuffer = self.sendBuffer.bind(this)
+    let sendBuffer = self.sendBuffer.bind(this)
     this.timerId = setInterval(function() {
         sendBuffer()
     }, 1000 * this.config.flushInterval)
@@ -82,7 +82,7 @@ OutputNewrelic.prototype.addTobuffer = function(line) {
 OutputNewrelic.prototype.sendBuffer = function() {
     let self = this
     let httpBody = []
-    for (var i = 0; i < this.buffer.length; i++) {
+    for (let i = 0; i < this.buffer.length; i++) {
         let json = JSON.parse(this.buffer[i])
         if (self.config.fields && self.config.fields[0]) {
             Object.keys(json).map(x => {
@@ -104,13 +104,13 @@ OutputNewrelic.prototype.send = function(body) {
     if (this.config.debug) {
         console.log('output-newrelic: ', body)
     }
-    var self = this
-    var headers = {
+    let self = this
+    let headers = {
         "Content-Type": "application/json",
         "Content-Encoding": "gzip",
         "X-License-Key": this.config.licenseKey
     }
-    var options = {
+    let options = {
         method: 'post',
         url: this.config.url,
         headers: headers,
@@ -143,39 +143,39 @@ OutputNewrelic.prototype.eventHandler = function(data, context) {
     if (this.config.tags) {
         data.tags = this.config.tags
     }
-    var msg = JSON.stringify(data)
+    let msg = JSON.stringify(data)
     let added = false;
     if (this.config.filters && this.config.filters.length > 0) {
-        this.config.filters.map( filtergroup => {
-        if ( filtergroup[0] ) {
-        let match, matchValue, matched = false;
-        filtergroup.map( filter => {
-        if ( filter.field && filter.match ) {
-        let fieldName = filter.field 
-        matchValue = fieldName.split('.').length > 1 ? data[fieldName.split('.')[0]][fieldName.split('.')[1]] : data[fieldName] || ''
-        match = filter.match
-        if (match.test(matchValue)) {
-            matched = true;
-            } else {
-            matched = false;
+        this.config.filters.map(filtergroup => {
+            if (filtergroup[0]) {
+                let match, matchValue, matched = false;
+                filtergroup.map(filter => {
+                    if (filter.field && filter.match) {
+                        let fieldName = filter.field
+                        matchValue = fieldName.split('.').length > 1 ? data[fieldName.split('.')[0]][fieldName.split('.')[1]] : data[fieldName] || ''
+                        match = filter.match
+                        if (match.test(matchValue)) {
+                            matched = true;
+                        } else {
+                            matched = false;
+                        }
+                    }
+                })
+                if (!added && matched) {
+                    added = true
+                    return this.addTobuffer(msg)
+                } else {
+                    if (this.config.debug === true && !added) {
+                        console.log(
+                            'output-newrelic: filter expression ' +
+                            match +
+                            ' did not match "' +
+                            matchValue + '"',
+                            data
+                        )
+                    }
+                }
             }
-            }
-            })
-            if ( !added && matched ) {
-            added = true
-            return this.addTobuffer(msg)
-        } else {
-            if (this.config.debug === true && !added) {
-                console.log(
-                    'output-newrelic: filter expression' +
-                    match +
-                    ' did not match ' +
-                    matchValue,
-                    data
-                )
-            }
-        }
-        }
         })
     } else {
         return this.addTobuffer(msg)
