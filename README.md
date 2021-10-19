@@ -15,7 +15,8 @@ npm i -g https://github.com/razb/logagent-output-new-relic
 input:
   files:
       - /logs/*.log
-  output:
+output:
+  output-newrelic:
     module: logagent-output-new-relic
     url: https://log-api.newrelic.com/log/v1
     licenseKey: XXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -25,6 +26,17 @@ input:
     maxBufferSize: 10
     # flush interval in seconds
     flushInterval: 10
+    # optional - list of fields to be forwarded - all other fields will be dropped
+    fields:
+        - '@timestamp'
+        - message
+        - log
+        - host
+        - store
+        - level
+        - service
+        - sendtime
+        - hash
 ```
 4) Start logagent
 ```
