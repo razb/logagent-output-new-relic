@@ -145,9 +145,10 @@ OutputNewrelic.prototype.eventHandler = function(data, context) {
     }
     let msg = JSON.stringify(data)
     let added = false;
-    if (this.config.filters && this.config.filters.length > 0) {
-        this.config.filters.map(filtergroup => {
-            if (filtergroup[0]) {
+    if (this.config.filters && Object.keys(this.config.filters).length > 0) {
+        Object.keys(this.config.filters).map(filtergroup => {
+            if (this.config.filters[filtergroup]) {
+                filtergroup = this.config.filters[filtergroup]
                 let match, matchValue, matched = false;
                 filtergroup.map(filter => {
                     if (filter.field && filter.match) {
