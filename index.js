@@ -18,12 +18,20 @@ function OutputNewrelic(config, eventEmitter) {
     this.config = config
     this.buffer = []
     this.eventEmitter = eventEmitter
+    if ( this.config.filters && this.config.filters.length > 0 ) {
+    this.config.filters.map( filtergroup => {
+    if ( filtergroup[0] ) {
+    filtergroup.map( filter => {
     if (
-        this.config.filter &&
-        this.config.filter.match &&
-        this.config.filter.field
+        filter &&
+        filter.match &&
+        filter.field
     ) {
-        this.config.filter.match = RegExp(this.config.filter.match)
+        filter.match = RegExp(filter.match)
+    }
+    })
+    }
+    })
     }
     if (this.config.maxBufferSize === undefined) {
         // set default
@@ -136,22 +144,39 @@ OutputNewrelic.prototype.eventHandler = function(data, context) {
         data.tags = this.config.tags
     }
     var msg = JSON.stringify(data)
-    if (this.config.filter !== undefined) {
-        var fieldName = this.config.filter.field || 'logSource'
-        var matchValue = data[fieldName] || ''
-        var match = this.config.filter.match
+    let added = false;
+    if (this.config.filters && this.config.filters.length > 0) {
+        this.config.filters.map( filtergroup => {
+        if ( filtergroup[0] ) {
+        let match, matchValue, matched = false;
+        filtergroup.map( filter => {
+        if ( filter.field && filter.match ) {
+        let fieldName = filter.field 
+        matchValue = fieldName.split('.').length > 1 ? data[fieldName.split('.')[0]][fieldName.split('.')[1]] : data[fieldName] || ''
+        match = filter.match
         if (match.test(matchValue)) {
+            matched = true;
+            } else {
+            matched = false;
+            }
+            }
+            })
+            if ( !added && matched ) {
+            added = true
             return this.addTobuffer(msg)
         } else {
-            if (this.config.debug === true) {
+            if (this.config.debug === true && !added) {
                 console.log(
                     'output-newrelic: filter expression' +
                     match +
                     ' did not match ' +
-                    matchValue
+                    matchValue,
+                    data
                 )
             }
         }
+        }
+        })
     } else {
         return this.addTobuffer(msg)
     }
