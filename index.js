@@ -145,6 +145,10 @@ OutputNewrelic.prototype.eventHandler = function(data, context) {
     }
     let msg = JSON.stringify(data)
     let added = false;
+    if (this.config.dropEventTTL && data.ttlactive) {
+        if (this.config.debug) console.log('Dropped event due to active TTL', data)
+        return null
+    }
     if (this.config.filters && Object.keys(this.config.filters).length > 0) {
         Object.keys(this.config.filters).map(filtergroup => {
             if (this.config.filters[filtergroup]) {
