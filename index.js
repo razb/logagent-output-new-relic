@@ -153,15 +153,17 @@ OutputNewrelic.prototype.eventHandler = function(data, context) {
         Object.keys(this.config.filters).map(filtergroup => {
             if (this.config.filters[filtergroup]) {
                 filtergroup = this.config.filters[filtergroup]
-                let match, matchValue, matched = false;
+                let match, matchValue, matched = false,
+                    plusfilter = false;
                 filtergroup.map(filter => {
                     if (filter.field && filter.match) {
                         let fieldName = filter.field
                         matchValue = fieldName.split('.').length > 1 ? data[fieldName.split('.')[0]][fieldName.split('.')[1]] : data[fieldName] || ''
-                        match = filter.match
-                        if (match.test(matchValue)) {
+                        match = RegExp(filter.match)
+                        if (match.test(matchValue) && !plusfilter) {
                             matched = true;
                         } else {
+                            plusfilter = true
                             matched = false;
                         }
                     }
